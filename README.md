@@ -41,9 +41,9 @@ FLAGS:
 
 ### Roadmap
 
-[ ] - Add Debian packaging
-[ ] - Add disk-usage tracking and alerts
-[ ] - Disable network interface on critical threshold (if selected)
+- Add Debian packaging  
+- Add disk-usage tracking and alerts  
+- Disable network interface on critical threshold (if selected)
 
 ### Licensing
 
