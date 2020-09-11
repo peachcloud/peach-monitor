@@ -20,7 +20,7 @@ struct Opt {
     #[structopt(short, long)]
     daemon: bool,
 
-    /// List usage totals, thresholds and alert flags
+    /// List usage totals, threshold and alert flags
     #[structopt(short, long)]
     list: bool,
 
@@ -52,98 +52,98 @@ impl Traffic {
     }
 }
 
-/// Warning and critical network traffic thresholds (bytes)
-struct Thresholds {
+/// Warning and cutoff network traffic threshold (bytes)
+struct Threshold {
     rx_warn: u64, // received bytes warning threshold
     tx_warn: u64, // transmitted bytes warning threshold
-    rx_crit: u64, // received bytes critical threshold
-    tx_crit: u64, // transmitted bytes critical threshold
+    rx_cut: u64,  // received bytes cutoff threshold
+    tx_cut: u64,  // transmitted bytes cutoff threshold
 }
 
-impl Thresholds {
-    /// Retrieve latest alert thresholds from the data store
-    fn get(store: &Store) -> Thresholds {
-        let mut thresholds = Vec::new();
+impl Threshold {
+    /// Retrieve latest alert threshold from the data store
+    fn get(store: &Store) -> Threshold {
+        let mut threshold = Vec::new();
 
         let rx_warn_val = store
-            .get(&["net", "thresholds", "rx_warn"])
+            .get(&["net", "notify", "rx_warn"])
             .unwrap_or(Value::Uint(0));
         if let Value::Uint(rx) = rx_warn_val {
-            thresholds.push(rx);
+            threshold.push(rx);
         };
 
         let tx_warn_val = store
-            .get(&["net", "thresholds", "tx_warn"])
+            .get(&["net", "notify", "tx_warn"])
             .unwrap_or(Value::Uint(0));
         if let Value::Uint(tx) = tx_warn_val {
-            thresholds.push(tx);
+            threshold.push(tx);
         };
 
-        let rx_crit_val = store
-            .get(&["net", "thresholds", "rx_crit"])
+        let rx_cut_val = store
+            .get(&["net", "notify", "rx_cut"])
             .unwrap_or(Value::Uint(0));
-        if let Value::Uint(rx) = rx_crit_val {
-            thresholds.push(rx);
+        if let Value::Uint(rx) = rx_cut_val {
+            threshold.push(rx);
         };
 
-        let tx_crit_val = store
-            .get(&["net", "thresholds", "tx_crit"])
+        let tx_cut_val = store
+            .get(&["net", "notify", "tx_cut"])
             .unwrap_or(Value::Uint(0));
-        if let Value::Uint(tx) = tx_crit_val {
-            thresholds.push(tx);
+        if let Value::Uint(tx) = tx_cut_val {
+            threshold.push(tx);
         };
 
-        Thresholds {
-            rx_warn: thresholds[0],
-            tx_warn: thresholds[1],
-            rx_crit: thresholds[2],
-            tx_crit: thresholds[3],
+        Threshold {
+            rx_warn: threshold[0],
+            tx_warn: threshold[1],
+            rx_cut: threshold[2],
+            tx_cut: threshold[3],
         }
     }
 }
 
 /// Evaluate traffic values against alert thresholds and set flags
-fn set_alert_flags(store: &Store, thresholds: &Thresholds) {
+fn set_alert_flags(store: &Store, threshold: &Threshold) {
     let rx_stored = store.get(&["net", "traffic", "rx"]).unwrap();
     if let Value::Uint(rx) = rx_stored {
-        if rx > thresholds.rx_warn {
+        if rx > threshold.rx_warn {
             store
-                .set(&["net", "alerts", "rx_warn_alert"], &Value::Bool(true))
+                .set(&["net", "alert", "rx_warn_alert"], &Value::Bool(true))
                 .unwrap();
         } else {
             store
-                .set(&["net", "alerts", "rx_warn_alert"], &Value::Bool(false))
+                .set(&["net", "alert", "rx_warn_alert"], &Value::Bool(false))
                 .unwrap();
         }
-        if rx > thresholds.rx_crit {
+        if rx > threshold.rx_cut {
             store
-                .set(&["net", "alerts", "rx_crit_alert"], &Value::Bool(true))
+                .set(&["net", "alert", "rx_cut_alert"], &Value::Bool(true))
                 .unwrap();
         } else {
             store
-                .set(&["net", "alerts", "rx_crit_alert"], &Value::Bool(false))
+                .set(&["net", "alert", "rx_cut_alert"], &Value::Bool(false))
                 .unwrap();
         }
     }
 
     let tx_stored = store.get(&["net", "traffic", "tx"]).unwrap();
     if let Value::Uint(tx) = tx_stored {
-        if tx > thresholds.tx_warn {
+        if tx > threshold.tx_warn {
             store
-                .set(&["net", "alerts", "tx_warn_alert"], &Value::Bool(true))
+                .set(&["net", "alert", "tx_warn_alert"], &Value::Bool(true))
                 .unwrap();
         } else {
             store
-                .set(&["net", "alerts", "tx_warn_alert"], &Value::Bool(false))
+                .set(&["net", "alert", "tx_warn_alert"], &Value::Bool(false))
                 .unwrap();
         }
-        if tx > thresholds.tx_crit {
+        if tx > threshold.tx_cut {
             store
-                .set(&["net", "alerts", "tx_crit_alert"], &Value::Bool(true))
+                .set(&["net", "alert", "tx_cut_alert"], &Value::Bool(true))
                 .unwrap();
         } else {
             store
-                .set(&["net", "alerts", "tx_crit_alert"], &Value::Bool(false))
+                .set(&["net", "alert", "tx_cut_alert"], &Value::Bool(false))
                 .unwrap();
         }
     }
@@ -195,8 +195,8 @@ fn main() -> Result<(), Error> {
     let schema = json!({
         "net": {
             "traffic": "json",
-            "thresholds": "json",
-            "alerts": "json"
+            "notify": "json",
+            "alert": "json"
         }
     })
     .try_into()?;
@@ -209,7 +209,7 @@ fn main() -> Result<(), Error> {
         update_transmission_totals(&store).unwrap();
     }
 
-    // list stored totals, thresholds and alert flags
+    // list stored totals, threshold and alert flags
     if opt.list {
         println!("Pretty list of data");
     }
@@ -226,11 +226,11 @@ fn main() -> Result<(), Error> {
 
         // run loop until SIGINT or SIGTERM is received
         while running.load(Ordering::SeqCst) {
-            // retrieve alert thresholds
-            let thresholds = Thresholds::get(&store);
+            // retrieve alert threshold
+            let threshold = Threshold::get(&store);
 
-            // test transmission totals against alert thresholds and set flags
-            set_alert_flags(&store, &thresholds);
+            // test transmission totals against alert threshold and set flags
+            set_alert_flags(&store, &threshold);
 
             thread::sleep(five_secs);
         }
