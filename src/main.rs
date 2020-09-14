@@ -27,6 +27,10 @@ struct Opt {
     /// Save latest usage totals to file
     #[structopt(short, long)]
     save: bool,
+
+    /// Update alert flags
+    #[structopt(short, long)]
+    update: bool,
 }
 
 /// Received and transmitted network traffic (bytes)
@@ -195,6 +199,15 @@ fn main() -> Result<(), Error> {
         update_transmission_totals(&opt.iface, &store).unwrap();
     }
 
+    // update alert flags
+    if opt.update {
+        // retrieve alert thresholds
+        let threshold = Threshold::get(&store);
+
+        // test transmission totals against alert thresholds and set flags
+        set_alert_flags(&store, &threshold)?;
+    }
+
     if opt.daemon {
         let running = Arc::new(AtomicBool::new(true));
         let r = running.clone();
@@ -207,7 +220,7 @@ fn main() -> Result<(), Error> {
 
         // run loop until SIGINT or SIGTERM is received
         while running.load(Ordering::SeqCst) {
-            // retrieve alert threshold
+            // retrieve alert thresholds
             let threshold = Threshold::get(&store);
 
             // test transmission totals against alert threshold and set flags

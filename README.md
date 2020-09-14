@@ -6,7 +6,9 @@ Monitor network data usage and set alert flags based on user-defined thresholds.
 
 The utility is intended to be run with the `--save` flag prior to each system reboot or shutdown. This allows network transmission totals (upload and download) to be persisted to the filesystem in the form of a JSON data store.
 
-When the `--daemon` flag is set, `peach-monitor` retrieves user-defined alert thresholds from the data store, calculates the latest data usage statistics and sets alert flags accordingly. These flag values can be access from other parts of the PeachCloud system to alert the user (for example, by `peach-web` for web application display).
+When the `--update` flag is set, `peach-monitor` retrieves user-defined alert thresholds from the data store, calculates the latest data usage statistics and sets alert flags accordingly. These flag values can be accessed from other parts of the PeachCloud system to alert the user (for example, by `peach-web` for web application display).
+
+The `--daemon` flag executes the `--update` functionality in a loop and is intended to be run as a background process for convenient alert flag updates.
 
 The `--iface` argument is used to define the network interface from which to retrieve network traffic data. This defaults to `wlan0` if not defined.
 
@@ -19,6 +21,7 @@ FLAGS:
     -d, --daemon     Run daemon
     -h, --help       Prints help information
     -s, --save       Save latest usage totals to file
+    -u, --update     Update alert flags
     -V, --version    Prints version information
 
 OPTIONS:
