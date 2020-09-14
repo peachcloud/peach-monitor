@@ -8,9 +8,11 @@ The utility is intended to be run with the `--save` flag prior to each system re
 
 When the `--daemon` flag is set, `peach-monitor` retrieves user-defined alert thresholds from the data store, calculates the latest data usage statistics and sets alert flags accordingly. These flag values can be access from other parts of the PeachCloud system to alert the user (for example, by `peach-web` for web application display).
 
+The `--iface` argument is used to define the network interface from which to retrieve network traffic data. This defaults to `wlan0` if not defined.
+
 ### Usage
 
-`peach-monitor [FLAGS]`
+`peach-monitor [FLAGS] [OPTIONS]`
 
 ```
 FLAGS:
@@ -18,6 +20,9 @@ FLAGS:
     -h, --help       Prints help information
     -s, --save       Save latest usage totals to file
     -V, --version    Prints version information
+
+OPTIONS:
+    -i, --iface <iface>    Define network interface [default: wlan0]
 ```
 
 ### Data Store

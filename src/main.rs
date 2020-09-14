@@ -20,6 +20,10 @@ struct Opt {
     #[structopt(short, long)]
     daemon: bool,
 
+    /// Define network interface
+    #[structopt(short, long, default_value = "wlan0")]
+    iface: String,
+
     /// Save latest usage totals to file
     #[structopt(short, long)]
     save: bool,
@@ -132,7 +136,7 @@ fn set_alert_flags(store: &Store, threshold: &Threshold) -> Result<(), Error> {
 }
 
 /// Calculate and store the latest network transmission totals
-fn update_transmission_totals(store: &Store) -> Result<(), Error> {
+fn update_transmission_totals(iface: &str, store: &Store) -> Result<(), Error> {
     // retrieve previous network traffic statistics
     let rx_stored = match store.get(&["net", "traffic", "rx"]) {
         Ok(rx) => rx,
@@ -146,7 +150,7 @@ fn update_transmission_totals(store: &Store) -> Result<(), Error> {
     };
 
     // retrieve latest network traffic statistics
-    let traffic = Traffic::get("wlan0").expect("Error while retrieving network traffic statistics");
+    let traffic = Traffic::get(iface).expect("Error while retrieving network traffic statistics");
 
     // store updated network traffic statistics (totals)
     if let Value::Uint(rx) = rx_stored {
@@ -188,7 +192,7 @@ fn main() -> Result<(), Error> {
 
     // update network transmission totals
     if opt.save {
-        update_transmission_totals(&store).unwrap();
+        update_transmission_totals(&opt.iface, &store).unwrap();
     }
 
     if opt.daemon {
