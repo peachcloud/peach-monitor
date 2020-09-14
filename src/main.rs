@@ -20,10 +20,6 @@ struct Opt {
     #[structopt(short, long)]
     daemon: bool,
 
-    /// List usage totals, threshold and alert flags
-    #[structopt(short, long)]
-    list: bool,
-
     /// Save latest usage totals to file
     #[structopt(short, long)]
     save: bool,
@@ -39,7 +35,7 @@ struct Traffic {
 impl Traffic {
     /// Retrieve latest statistics for received and transmitted traffic
     fn get(iface: &str) -> Option<Traffic> {
-        let network = network::read().unwrap();
+        let network = network::read().expect("IO error when executing network command");
         for (interface, data) in network.interfaces {
             if interface == iface {
                 let rx = data.received;
@@ -103,50 +99,36 @@ impl Threshold {
 }
 
 /// Evaluate traffic values against alert thresholds and set flags
-fn set_alert_flags(store: &Store, threshold: &Threshold) {
-    let rx_stored = store.get(&["net", "traffic", "rx"]).unwrap();
+fn set_alert_flags(store: &Store, threshold: &Threshold) -> Result<(), Error> {
+    let rx_stored = store.get(&["net", "traffic", "rx"])?;
     if let Value::Uint(rx) = rx_stored {
         if rx > threshold.rx_warn {
-            store
-                .set(&["net", "alert", "rx_warn_alert"], &Value::Bool(true))
-                .unwrap();
+            store.set(&["net", "alert", "rx_warn_alert"], &Value::Bool(true))?;
         } else {
-            store
-                .set(&["net", "alert", "rx_warn_alert"], &Value::Bool(false))
-                .unwrap();
+            store.set(&["net", "alert", "rx_warn_alert"], &Value::Bool(false))?;
         }
         if rx > threshold.rx_cut {
-            store
-                .set(&["net", "alert", "rx_cut_alert"], &Value::Bool(true))
-                .unwrap();
+            store.set(&["net", "alert", "rx_cut_alert"], &Value::Bool(true))?;
         } else {
-            store
-                .set(&["net", "alert", "rx_cut_alert"], &Value::Bool(false))
-                .unwrap();
+            store.set(&["net", "alert", "rx_cut_alert"], &Value::Bool(false))?;
         }
     }
 
-    let tx_stored = store.get(&["net", "traffic", "tx"]).unwrap();
+    let tx_stored = store.get(&["net", "traffic", "tx"])?;
     if let Value::Uint(tx) = tx_stored {
         if tx > threshold.tx_warn {
-            store
-                .set(&["net", "alert", "tx_warn_alert"], &Value::Bool(true))
-                .unwrap();
+            store.set(&["net", "alert", "tx_warn_alert"], &Value::Bool(true))?;
         } else {
-            store
-                .set(&["net", "alert", "tx_warn_alert"], &Value::Bool(false))
-                .unwrap();
+            store.set(&["net", "alert", "tx_warn_alert"], &Value::Bool(false))?;
         }
         if tx > threshold.tx_cut {
-            store
-                .set(&["net", "alert", "tx_cut_alert"], &Value::Bool(true))
-                .unwrap();
+            store.set(&["net", "alert", "tx_cut_alert"], &Value::Bool(true))?;
         } else {
-            store
-                .set(&["net", "alert", "tx_cut_alert"], &Value::Bool(false))
-                .unwrap();
+            store.set(&["net", "alert", "tx_cut_alert"], &Value::Bool(false))?;
         }
     }
+
+    Ok(())
 }
 
 /// Calculate and store the latest network transmission totals
@@ -164,7 +146,7 @@ fn update_transmission_totals(store: &Store) -> Result<(), Error> {
     };
 
     // retrieve latest network traffic statistics
-    let traffic = Traffic::get("wlan0").unwrap();
+    let traffic = Traffic::get("wlan0").expect("Error while retrieving network traffic statistics");
 
     // store updated network traffic statistics (totals)
     if let Value::Uint(rx) = rx_stored {
@@ -209,11 +191,6 @@ fn main() -> Result<(), Error> {
         update_transmission_totals(&store).unwrap();
     }
 
-    // list stored totals, threshold and alert flags
-    if opt.list {
-        println!("Pretty list of data");
-    }
-
     if opt.daemon {
         let running = Arc::new(AtomicBool::new(true));
         let r = running.clone();
@@ -230,7 +207,7 @@ fn main() -> Result<(), Error> {
             let threshold = Threshold::get(&store);
 
             // test transmission totals against alert threshold and set flags
-            set_alert_flags(&store, &threshold);
+            set_alert_flags(&store, &threshold)?;
 
             thread::sleep(five_secs);
         }
