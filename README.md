@@ -8,8 +8,6 @@ The utility is intended to be run with the `--save` flag prior to each system re
 
 When the `--daemon` flag is set, `peach-monitor` retrieves user-defined alert thresholds from the data store, calculates the latest data usage statistics and sets alert flags accordingly. These flag values can be access from other parts of the PeachCloud system to alert the user (for example, by `peach-web` for web application display).
 
-A `--list` flag is included as a convenience method for printing values from the data store.
-
 ### Usage
 
 `peach-monitor [FLAGS]`
@@ -18,7 +16,6 @@ A `--list` flag is included as a convenience method for printing values from the
 FLAGS:
     -d, --daemon     Run daemon
     -h, --help       Prints help information
-    -l, --list       List usage totals, thresholds and alert flags
     -s, --save       Save latest usage totals to file
     -V, --version    Prints version information
 ```
@@ -30,8 +27,8 @@ FLAGS:
 ```
 .
 └── net
-    ├── alerts.json         // alert flags
-    ├── thresholds.json     // user-defined alert thresholds
+    ├── alert.json          // programatically-defined alert flags
+    ├── notify.json         // user-defined alert thresholds
     └── traffic.json        // network transmission totals
 ```
 
@@ -43,7 +40,6 @@ FLAGS:
 
 - Add Debian packaging  
 - Add disk-usage tracking and alerts  
-- Disable network interface on critical threshold (if selected)
 
 ### Licensing
 
