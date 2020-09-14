@@ -28,6 +28,10 @@ struct Opt {
     #[structopt(short, long)]
     save: bool,
 
+    /// Define time interval for updating alert flags (seconds)
+    #[structopt(short = "t", long, default_value = "60")]
+    interval: u64,
+
     /// Update alert flags
     #[structopt(short, long)]
     update: bool,
@@ -216,7 +220,7 @@ fn main() -> Result<(), Error> {
         })
         .expect("Error setting Ctrl-C handler");
 
-        let five_secs = time::Duration::from_millis(5000);
+        let interval = time::Duration::from_secs(opt.interval);
 
         // run loop until SIGINT or SIGTERM is received
         while running.load(Ordering::SeqCst) {
@@ -226,7 +230,7 @@ fn main() -> Result<(), Error> {
             // test transmission totals against alert threshold and set flags
             set_alert_flags(&store, &threshold)?;
 
-            thread::sleep(five_secs);
+            thread::sleep(interval);
         }
 
         println!("Terminating gracefully...");

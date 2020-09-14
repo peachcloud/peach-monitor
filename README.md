@@ -8,7 +8,7 @@ The utility is intended to be run with the `--save` flag prior to each system re
 
 When the `--update` flag is set, `peach-monitor` retrieves user-defined alert thresholds from the data store, calculates the latest data usage statistics and sets alert flags accordingly. These flag values can be accessed from other parts of the PeachCloud system to alert the user (for example, by `peach-web` for web application display).
 
-The `--daemon` flag executes the `--update` functionality in a loop and is intended to be run as a background process for convenient alert flag updates.
+The `--daemon` flag executes the `--update` functionality in a loop and is intended to be run as a background process for convenient alert flag updates. The optional `--interval` argument defines the frequency with which the alert flags are updated. The default update frequency is once every 60 seconds.
 
 The `--iface` argument is used to define the network interface from which to retrieve network traffic data. This defaults to `wlan0` if not defined.
 
@@ -26,6 +26,7 @@ FLAGS:
 
 OPTIONS:
     -i, --iface <iface>    Define network interface [default: wlan0]
+    -t, --interval <interval>    Define time interval for updating alert flags (seconds) [default: 60]
 ```
 
 ### Data Store
