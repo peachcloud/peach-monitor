@@ -110,16 +110,22 @@ impl Threshold {
     }
 }
 
+/// Convert a megabyte value to bytes
+fn to_bytes(val: u64) -> u64 {
+    (val * 1024) * 1024
+}
+
 /// Evaluate traffic values against alert thresholds and set flags
 fn set_alert_flags(store: &Store, threshold: &Threshold) -> Result<(), Error> {
     let rx_stored = store.get(&["net", "traffic", "rx"])?;
     if let Value::Uint(rx) = rx_stored {
-        if rx > threshold.rx_warn {
+        // rx is in bytes while rx_warn is in megabytes
+        if rx > to_bytes(threshold.rx_warn) {
             store.set(&["net", "alert", "rx_warn_alert"], &Value::Bool(true))?;
         } else {
             store.set(&["net", "alert", "rx_warn_alert"], &Value::Bool(false))?;
         }
-        if rx > threshold.rx_cut {
+        if rx > to_bytes(threshold.rx_cut) {
             store.set(&["net", "alert", "rx_cut_alert"], &Value::Bool(true))?;
         } else {
             store.set(&["net", "alert", "rx_cut_alert"], &Value::Bool(false))?;
@@ -128,12 +134,12 @@ fn set_alert_flags(store: &Store, threshold: &Threshold) -> Result<(), Error> {
 
     let tx_stored = store.get(&["net", "traffic", "tx"])?;
     if let Value::Uint(tx) = tx_stored {
-        if tx > threshold.tx_warn {
+        if tx > to_bytes(threshold.tx_warn) {
             store.set(&["net", "alert", "tx_warn_alert"], &Value::Bool(true))?;
         } else {
             store.set(&["net", "alert", "tx_warn_alert"], &Value::Bool(false))?;
         }
-        if tx > threshold.tx_cut {
+        if tx > to_bytes(threshold.tx_cut) {
             store.set(&["net", "alert", "tx_cut_alert"], &Value::Bool(true))?;
         } else {
             store.set(&["net", "alert", "tx_cut_alert"], &Value::Bool(false))?;
