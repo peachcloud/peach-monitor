@@ -37,22 +37,22 @@ struct Opt {
     update: bool,
 }
 
-/// Received and transmitted network traffic (bytes)
+/// Network traffic total (bytes)
 #[derive(Debug)]
 struct Traffic {
-    rx: u64, // total bytes received
-    tx: u64, // total bytes transmitted
+    total: u64, // bytes
 }
 
 impl Traffic {
-    /// Retrieve latest statistics for received and transmitted traffic
+    /// Retrieve latest statistics for traffic
     fn get(iface: &str) -> Option<Traffic> {
         let network = network::read().expect("IO error when executing network command");
         for (interface, data) in network.interfaces {
             if interface == iface {
                 let rx = data.received;
                 let tx = data.transmitted;
-                let t = Traffic { rx, tx };
+                let total = rx + tx;
+                let t = Traffic { total };
                 return Some(t);
             };
         }
@@ -62,10 +62,8 @@ impl Traffic {
 
 /// Warning and cutoff network traffic threshold (bytes)
 struct Threshold {
-    rx_warn: u64, // received bytes warning threshold
-    tx_warn: u64, // transmitted bytes warning threshold
-    rx_cut: u64,  // received bytes cutoff threshold
-    tx_cut: u64,  // transmitted bytes cutoff threshold
+    warn: u64, // warning threshold (bytes)
+    cut: u64,  // cutoff threshold (bytes)
 }
 
 impl Threshold {
@@ -73,39 +71,23 @@ impl Threshold {
     fn get(store: &Store) -> Threshold {
         let mut threshold = Vec::new();
 
-        let rx_warn_val = store
-            .get(&["net", "notify", "rx_warn"])
+        let warn_val = store
+            .get(&["net", "notify", "warn"])
             .unwrap_or(Value::Uint(0));
-        if let Value::Uint(rx) = rx_warn_val {
-            threshold.push(rx);
+        if let Value::Uint(val) = warn_val {
+            threshold.push(val);
         };
 
-        let tx_warn_val = store
-            .get(&["net", "notify", "tx_warn"])
+        let cut_val = store
+            .get(&["net", "notify", "cut"])
             .unwrap_or(Value::Uint(0));
-        if let Value::Uint(tx) = tx_warn_val {
-            threshold.push(tx);
-        };
-
-        let rx_cut_val = store
-            .get(&["net", "notify", "rx_cut"])
-            .unwrap_or(Value::Uint(0));
-        if let Value::Uint(rx) = rx_cut_val {
-            threshold.push(rx);
-        };
-
-        let tx_cut_val = store
-            .get(&["net", "notify", "tx_cut"])
-            .unwrap_or(Value::Uint(0));
-        if let Value::Uint(tx) = tx_cut_val {
-            threshold.push(tx);
+        if let Value::Uint(val) = cut_val {
+            threshold.push(val);
         };
 
         Threshold {
-            rx_warn: threshold[0],
-            tx_warn: threshold[1],
-            rx_cut: threshold[2],
-            tx_cut: threshold[3],
+            warn: threshold[0],
+            cut: threshold[1],
         }
     }
 }
@@ -117,32 +99,18 @@ fn to_bytes(val: u64) -> u64 {
 
 /// Evaluate traffic values against alert thresholds and set flags
 fn set_alert_flags(store: &Store, threshold: &Threshold) -> Result<(), Error> {
-    let rx_stored = store.get(&["net", "traffic", "rx"])?;
-    if let Value::Uint(rx) = rx_stored {
-        // rx is in bytes while rx_warn is in megabytes
-        if rx > to_bytes(threshold.rx_warn) {
-            store.set(&["net", "alert", "rx_warn_alert"], &Value::Bool(true))?;
+    let stored_total = store.get(&["net", "traffic", "total"])?;
+    if let Value::Uint(total) = stored_total {
+        // total is in bytes while warn is in megabytes
+        if total > to_bytes(threshold.warn) {
+            store.set(&["net", "alert", "warn_alert"], &Value::Bool(true))?;
         } else {
-            store.set(&["net", "alert", "rx_warn_alert"], &Value::Bool(false))?;
+            store.set(&["net", "alert", "warn_alert"], &Value::Bool(false))?;
         }
-        if rx > to_bytes(threshold.rx_cut) {
-            store.set(&["net", "alert", "rx_cut_alert"], &Value::Bool(true))?;
+        if total > to_bytes(threshold.cut) {
+            store.set(&["net", "alert", "cut_alert"], &Value::Bool(true))?;
         } else {
-            store.set(&["net", "alert", "rx_cut_alert"], &Value::Bool(false))?;
-        }
-    }
-
-    let tx_stored = store.get(&["net", "traffic", "tx"])?;
-    if let Value::Uint(tx) = tx_stored {
-        if tx > to_bytes(threshold.tx_warn) {
-            store.set(&["net", "alert", "tx_warn_alert"], &Value::Bool(true))?;
-        } else {
-            store.set(&["net", "alert", "tx_warn_alert"], &Value::Bool(false))?;
-        }
-        if tx > to_bytes(threshold.tx_cut) {
-            store.set(&["net", "alert", "tx_cut_alert"], &Value::Bool(true))?;
-        } else {
-            store.set(&["net", "alert", "tx_cut_alert"], &Value::Bool(false))?;
+            store.set(&["net", "alert", "cut_alert"], &Value::Bool(false))?;
         }
     }
 
@@ -152,13 +120,8 @@ fn set_alert_flags(store: &Store, threshold: &Threshold) -> Result<(), Error> {
 /// Calculate and store the latest network transmission totals
 fn update_transmission_totals(iface: &str, store: &Store) -> Result<(), Error> {
     // retrieve previous network traffic statistics
-    let rx_stored = match store.get(&["net", "traffic", "rx"]) {
-        Ok(rx) => rx,
-        // return 0 if no value exists
-        Err(_) => Value::Uint(u64::MIN),
-    };
-    let tx_stored = match store.get(&["net", "traffic", "tx"]) {
-        Ok(tx) => tx,
+    let stored_total = match store.get(&["net", "traffic", "total"]) {
+        Ok(total) => total,
         // return 0 if no value exists
         Err(_) => Value::Uint(u64::MIN),
     };
@@ -167,15 +130,10 @@ fn update_transmission_totals(iface: &str, store: &Store) -> Result<(), Error> {
     let traffic = Traffic::get(iface).expect("Error while retrieving network traffic statistics");
 
     // store updated network traffic statistics (totals)
-    if let Value::Uint(rx) = rx_stored {
-        let rx_total = rx + traffic.rx;
-        let rx_value = Value::Uint(rx_total);
-        store.set(&["net", "traffic", "rx"], &rx_value)?;
-    };
-    if let Value::Uint(tx) = tx_stored {
-        let tx_total = tx + traffic.tx;
-        let tx_value = Value::Uint(tx_total);
-        store.set(&["net", "traffic", "tx"], &tx_value)?;
+    if let Value::Uint(total) = stored_total {
+        let updated_total = total + traffic.total;
+        let total_value = Value::Uint(updated_total);
+        store.set(&["net", "traffic", "total"], &total_value)?;
     };
 
     Ok(())

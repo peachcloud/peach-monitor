@@ -10,7 +10,7 @@ When the `--update` flag is set, `peach-monitor` retrieves user-defined alert th
 
 The `--daemon` flag executes the `--update` functionality in a loop and is intended to be run as a background process for convenient alert flag updates. The optional `--interval` argument defines the frequency with which the alert flags are updated. The default update frequency is once every 60 seconds.
 
-The `--iface` argument is used to define the network interface from which to retrieve network traffic data. This defaults to `wlan0` if not defined.
+The `--iface` argument is used to define the network interface from which to retrieve network traffic data statistics. This defaults to `wlan0` if not defined.
 
 ### Usage
 
@@ -43,7 +43,7 @@ OPTIONS:
 
 ### Alert Types
 
-`peach-monitor` defines warning and critical thresholds and corresponding alert flags for both received and transmitted network data. The critical thresholds may allow a disable-network feature in future implementations of `peach-monitor`.
+`peach-monitor` defines warning and critical thresholds and corresponding alert flags for total network data traffic. The critical threshold may allow a disable-network feature in future implementations of `peach-monitor`.
 
 ### Roadmap
 
