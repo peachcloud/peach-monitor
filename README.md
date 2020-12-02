@@ -1,5 +1,7 @@
 # peach-monitor
 
+![Generic badge](https://img.shields.io/badge/version-0.1.1-<COLOR>.svg)
+
 Monitor network data usage and set alert flags based on user-defined thresholds.
 
 `peach-monitor` is a CLI tool capable of running as a one-shot data store updater or as a daemon for continually updating data usage alert flags.
