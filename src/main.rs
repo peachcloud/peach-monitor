@@ -1,5 +1,3 @@
-extern crate ctrlc;
-
 use std::convert::TryInto;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
