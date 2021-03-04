@@ -18,7 +18,7 @@ The `--iface` argument is used to define the network interface from which to ret
 
 `peach-monitor [FLAGS] [OPTIONS]`
 
-```
+```bash
 FLAGS:
     -d, --daemon     Run daemon
     -h, --help       Prints help information
@@ -85,7 +85,7 @@ Remove configuration files (not removed with `apt-get remove`):
 
 ### Roadmap
 
-- Add disk-usage tracking and alerts  
+- Add disk-usage tracking and alerts
 
 ### Licensing
 
