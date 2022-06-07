@@ -1,3 +1,7 @@
+⚠️ This repo is no longer active and has been archived. The active repo can be found at https://git.coopcloud.tech/PeachCloud/peach-workspace/src/branch/main/peach-monitor ⚠️
+
+-----
+
 # peach-monitor
 
 ![Generic badge](https://img.shields.io/badge/version-0.1.1-<COLOR>.svg)
